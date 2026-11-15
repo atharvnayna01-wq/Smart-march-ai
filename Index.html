@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMART MARCH AI</title>
+<style>
+:root{--bg:#0b1220;--panel:#141f30;--line:#29384d;--green:#a3e635;--muted:#9aabc0;--white:#f4f7fb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--white);font-family:Arial,sans-serif}
+header{padding:22px 5%;background:#101b2b;border-bottom:1px solid var(--line)}
+.logo{font-size:24px;font-weight:900;letter-spacing:1px}
+.logo span{color:var(--green)}
+header p{color:var(--muted);margin:7px 0 0;font-size:13px}
+main{max-width:1100px;margin:auto;padding:24px 5%}
+.hero{padding:26px 0}
+.hero h1{font-size:clamp(27px,5vw,42px);margin:0 0 10px}
+.hero h1 span{color:var(--green)}
+.hero p{color:var(--muted);line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:20px;margin-bottom:16px}
+.card h2{font-size:18px;margin:0 0 17px}
+label{display:block;font-size:13px;color:var(--muted);margin:13px 0 7px}
+input,select{width:100%;padding:12px;background:#0c1625;color:white;border:1px solid var(--line);border-radius:8px;font-size:15px}
+button{border:0;border-radius:9px;padding:13px 17px;background:var(--green);color:#15200b;font-weight:bold;font-size:14px;cursor:pointer}
+button.secondary{background:#26374d;color:white;border:1px solid #3b506b}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.result{background:linear-gradient(135deg,#243b2c,#142b27);border:1px solid #456d3c}
+.result small{color:#c5d8bd}
+.big{font-size:clamp(32px,7vw,48px);font-weight:900;color:var(--green);margin:10px 0}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}
+.stat{background:#0d1a25;padding:14px;border-radius:10px}
+.stat strong{display:block;font-size:19px;margin-top:6px}
+.muted{color:var(--muted);font-size:13px;line-height:1.6}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{text-align:left;padding:11px 7px;border-bottom:1px solid var(--line)}
+footer{text-align:center;padding:25px;color:var(--muted);font-size:12px}
+@media(max-width:480px){.stats{grid-template-columns:1fr 1fr}.card{padding:16px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">SMART MARCH <span>AI</span></div>
+ <p>Intelligent March Planning & Performance Estimation</p>
+</header>
+<main>
+ <section class="hero">
+  <h1>Plan smarter. <span>March better.</span></h1>
+  <p>A planning prototype to estimate march duration using distance, terrain, elevation, load and environmental conditions.</p>
+ </section>
+
+ <section class="card">
+  <h2>01 / March Parameters</h2>
+  <div class="grid">
+   <div><label>Distance (km)</label><input id="distance" type="number" min="0.1" step="0.1" value="10"></div>
+   <div><label>Elevation gain (metres)</label><input id="elevation" type="number" min="0" value="100"></div>
+   <div><label>Backpack load (kg)</label><input id="load" type="number" min="0" step="0.5" value="5"></div>
+   <div><label>Group size (people)</label><input id="group" type="number" min="1" value="30"></div>
+   <div><label>Base walking speed (km/h)</label><input id="pace" type="number" min="0.5" max="10" step="0.1" value="4.5"></div>
+   <div><label>Rest breaks (minutes)</label><input id="breaks" type="number" min="0" value="20"></div>
+   <div><label>Terrain</label>
+    <select id="terrain">
+     <option value="1">Level / firm road</option>
+     <option value="1.12">Uneven</option>
+     <option value="1.25">Hilly</option>
+     <option value="1.4">Rough trail</option>
+    </select>
+   </div>
+   <div><label>Weather</label>
+    <select id="weather">
+     <option value="1">Mild</option>
+     <option value="1.08">Warm</option>
+     <option value="1.15">Hot / humid</option>
+     <option value="1.12">Light rain</option>
+    </select>
+   </div>
+  </div>
+  <div class="actions">
+   <button onclick="calculate()">Calculate march time</button>
+   <button class="secondary" onclick="resetForm()">Reset</button>
+  </div>
+ </section>
+
+ <section class="card result" id="result">
+  <small>02 / Estimated duration</small>
+  <div class="big" id="time">-- h -- min</div>
+  <p id="explanation" class="muted">Enter your parameters and calculate an estimate.</p>
+  <div class="stats">
+   <div class="stat"><small>Walking time</small><strong id="walking">--</strong></div>
+   <div class="stat"><small>Rest time</small><strong id="rest">--</strong></div>
+   <div class="stat"><small>Adjusted speed</small><strong id="speed">--</strong></div>
+   <div class="stat"><small>Total distance</small><strong id="distout">--</strong></div>
+  </div>
+  <p class="muted">This is a heuristic planning estimate, not a trained AI prediction or a validated confidence interval.</p>
+  <div class="actions"><button onclick="saveRecord()">Save field record</button></div>
+ </section>
+
+ <section class="card">
+  <h2>03 / Field Records</h2>
+  <p class="muted">Records are stored locally in this browser on this device.</p>
+  <div class="actions">
+   <button class="secondary" onclick="exportCSV()">Export CSV</button>
+   <button class="secondary" onclick="clearRecords()">Clear records</button>
+  </div>
+  <div style="overflow-x:auto;margin-top:15px">
+   <table>
+    <thead><tr><th>Date</th><th>Distance</th><th>Estimate</th><th>Terrain</th></tr></thead>
+    <tbody id="records"><tr><td colspan="4">No records saved yet.</td></tr></tbody>
+   </table>
+  </div>
+ </section>
+
+ <section class="card">
+  <h2>04 / About the project</h2>
+  <p class="muted">SMART MARCH AI aims to support route-march planning through statistical analysis and predictive modelling. Future development can incorporate real field observations, model training, validation and route-specific datasets.</p>
+  <p class="muted"><strong>Development status:</strong> Early functional prototype. The current calculator uses illustrative adjustment factors. It has not yet been validated against real NCC march observations.</p>
+ </section>
+</main>
+<footer>SMART MARCH AI · Prototype · Built for smarter and safer planning</footer>
+
+<script>
+let latest=null;
+function val(id){return Number(document.getElementById(id).value)}
+function calculate(){
+ const d=val("distance"),e=val("elevation"),l=val("load"),
+ g=val("group"),p=val("pace"),b=val("breaks");
+ if(![d,e,l,g,p,b].every(Number.isFinite)||d<=0||g<1||p<=0||e<0||l<0||b<0){
+  alert("Please enter valid positive values.");return;
+ }
+ const terrain=val("terrain"),weather=val("weather");
+ const loadFactor=1+Math.min(l,30)*0.012;
+ const elevationFactor=1+Math.min(e,3000)*0.00012;
+ const groupFactor=1+Math.min(Math.max(g-20,0),100)*0.001;
+ const adjusted=p/(terrain*weather*loadFactor*elevationFactor*groupFactor);
+ const walk=d/adjusted;
+ const total=walk+b/60;
+ const hours=Math.floor(total),minutes=Math.round((total-hours)*60);
+ const fmt=(x)=>Math.floor(x)+" h "+Math.round((x-Math.floor(x))*60)+" min";
+ document.getElementById("time").textContent=hours+" h "+minutes+" min";
+ document.getElementById("walking").textContent=fmt(walk);
+ document.getElementById("rest").textContent=b+" min";
+ document.getElementById("speed").textContent=adjusted.toFixed(2)+" km/h";
+ document.getElementById("distout").textContent=d.toFixed(1)+" km";
+ document.getElementById("explanation").textContent="Estimated duration for "+g+" people, based on the entered planning assumptions.";
+ latest={date:new Date().toLocaleString(),distance:d,elevation:e,load:l,group:g,pace:p,breaks:b,terrain:document.getElementById("terrain").selectedOptions[0].text,weather:document.getElementById("weather").selectedOptions[0].text,estimate:total.toFixed(2)};
+}
+function resetForm(){
+ document.getElementById("distance").value=10;
+ document.getElementById("elevation").value=100;
+ document.getElementById("load").value=5;
+ document.getElementById("group").value=30;
+ document.getElementById("pace").value=4.5;
+ document.getElementById("breaks").value=20;
+ document.getElementById("terrain").selectedIndex=0;
+ document.getElementById("weather").selectedIndex=0;
+ calculate();
+}
+function getRecords(){return JSON.parse(localStorage.getItem("smartMarchRecords")||"[]")}
+function saveRecord(){
+ if(!latest){alert("Calculate first.");return}
+ const rows=getRecords();rows.push(latest);
+ localStorage.setItem("smartMarchRecords",JSON.stringify(rows));
+ showRecords();alert("Field record saved on this device.");
+}
+function showRecords(){
+ const rows=getRecords();
+ document.getElementById("records").innerHTML=rows.length?rows.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.distance} km</td><td>${r.estimate} h</td><td>${r.terrain}</td></tr>`).join(""):'<tr><td colspan="4">No records saved yet.</td></tr>';
+}
+function exportCSV(){
+ const rows=getRecords();
+ if(!rows.length){alert("No records to export.");return}
+ const keys=Object.keys(rows[0]);
+ const csv=[keys.join(","),...rows.map(r=>keys.map(k=>'"'+String(r[k]).replace(/"/g,'""')+'"').join(","))].join("\n");
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+ a.download="smart-march-field-records.csv";a.click();
+ URL.revokeObjectURL(a.href);
+}
+function clearRecords(){
+ if(confirm("Delete all locally saved records?")){
+  localStorage.removeItem("smartMarchRecords");showRecords();
+ }
+}
+calculate();showRecords();
+</script>
+</body>
+  </html>
+  
